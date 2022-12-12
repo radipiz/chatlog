@@ -1,33 +1,38 @@
-import socket, time
-from config import DELAY, CHANNEL, ALERT_SOUND, ALERT_RUMBLE
-from alerts import sound, rumble
-from common import window
+import socket
+from datetime import datetime
+from config import CHANNEL
 
 sock = socket.socket()
-sock.connect(('irc.chat.twitch.tv',6667))
+sock.connect(('irc.chat.twitch.tv', 6667))
 sock.send(f"NICK justinfan0\n".encode('utf-8'))
 sock.send(f"JOIN {CHANNEL}\n".encode('utf-8'))
 
 lastAlert = 0
 
-def parseChat(resp):
+
+def parse_chat(resp):
     resp = resp.rstrip().split('\r\n')
     for line in resp:
         if "PRIVMSG" in line:
             user = line.split(':')[1].split('!')[0]
+            channel = get_channel(line)
             msg = line.split(':', maxsplit=2)[2]
-            line = user + ": " + msg
+            datestr = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            line = f'{datestr} {channel} {user}: {msg}'
         print(line)
 
-while True:
-    resp = sock.recv(2048).decode('utf-8')
 
-    if resp.startswith('PING'):
+def get_channel(line: str) -> str:
+    indicator = 'PRIVMSG'
+    left_cut = line[line.index('PRIVMSG') + len(indicator) + 1:]
+    return left_cut[:left_cut.index(':') - 1]
+
+
+while True:
+    response = sock.recv(2048).decode('utf-8')
+
+    if response.startswith('PING'):
         sock.send("PONG\n".encode('utf-8'))
-    
-    elif len(resp) > 0:
-        parseChat(resp)
-        if not window.foreground() and time.time() - lastAlert > DELAY:
-            if ALERT_SOUND: sound.alert()
-            if ALERT_RUMBLE: rumble.alert()
-            lastAlert = time.time()
+
+    elif len(response) > 0:
+        parse_chat(response)
