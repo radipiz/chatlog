@@ -5,7 +5,8 @@ from config import CHANNEL
 sock = socket.socket()
 sock.connect(('irc.chat.twitch.tv', 6667))
 sock.send(f"NICK justinfan0\n".encode('utf-8'))
-sock.send(f"JOIN {CHANNEL}\n".encode('utf-8'))
+for chan in CHANNEL:
+    sock.send(f"JOIN {chan}\n".encode('utf-8'))
 
 lastAlert = 0
 
